@@ -1,0 +1,28 @@
+version: '3.9'
+
+name: appchat
+
+services:
+  db:
+   image: postgres
+   container_name: appchat
+   restart: always
+   ports:
+     - 5441:5432
+   environment:
+    POSTGRES_PASSWORD: ${DB_PWD}
+    POSTGRES_USER: ${DB_USER}
+    POSTGRES_DB: ${DB_NAME}
+   volumes: 
+    - pgdata:/var/lib/postgresql/18/docker
+  
+  db_client:
+    image: adminer
+    restart: always
+    ports:
+      - 8084:8080
+    volumes:
+     - pgdata:/var/lib/postgresql/18/docker
+  
+volumes: 
+  pgdata:

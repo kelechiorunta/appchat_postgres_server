@@ -1,0 +1,50 @@
+{
+  "name": "appchat",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/server.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "nodemon --exec ts-node src/server.ts",
+    "migrate": "knex migrate:latest --knexfile src/knexfile.ts",
+    "seed": "knex seed:run --knexfile src/knexfile.ts",
+    "seed:make": "knex seed:make --knexfile src/knexfile.ts",
+    "migrate:make": "knex migrate:make -x ts --knexfile src/knexfile.ts",
+    "migrate:rollback": "knex migrate:rollback --knexfile src/knexfile.ts",
+    "nginx:start": "brew services start nginx",
+    "nginx:stop": "brew services stop nginx",
+    "nginx:restart": "brew services restart nginx"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.6.1",
+    "@types/pdfkit": "^0.17.6",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "@cloudinary/url-gen": "^1.22.0",
+    "@types/pg": "^8.23.1",
+    "axios": "^1.20.0",
+    "body-parser": "^2.3.0",
+    "cloudinary": "^2.11.0",
+    "cookieparser": "^0.1.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.0",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "knex": "^3.3.0",
+    "multer": "^2.4.0",
+    "pdfkit": "^0.20.2",
+    "pg": "^8.23.0"
+  }
+}
