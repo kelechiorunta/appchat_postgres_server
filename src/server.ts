@@ -6,5 +6,5 @@ const server = createServer(app);
 const PORT = 5467;
 createDBConnection();
 
-server.listen(PORT, () => console.log(`Server is listening at PORT ${PORT}`))
+server.listen(PORT, '0.0.0.0', () => console.log(`Server is listening at PORT ${PORT}`))
 
