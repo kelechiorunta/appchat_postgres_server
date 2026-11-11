@@ -50,20 +50,27 @@ const config: { [key: string]: Knex.Config } = {
   production: {
     client: 'pg',
     connection: {
-      host: '127.0.0.1',
+      host: 'db',
       port: 5441,
       user: process.env.DB_USER as string,
       password: process.env.DB_PWD as string,
       database: process.env.DB_NAME as string
     },
-    debug: true,
+    debug: false,
     pool: { min: 0, max: 7 },
     migrations: {
       directory: path.join(__dirname, 'migrations'),
-      tableName: 'knex_migrations'
+      tableName: 'knex_migrations',
+      extension: 'js'
+    },
+    seeds: {
+      directory: path.join(__dirname, 'seeds'),
+      extension: 'js'
     }
   }
 };
 
-export default config['development'];
+const environment = process.env.NODE_ENV || 'development';
+
+export default config[environment];
 // module.exports = config;
