@@ -8,6 +8,7 @@
     "build": "tsc",
     "start": "nodemon --exec ts-node src/server.ts",
     "migrate": "knex migrate:latest --knexfile src/knexfile.ts",
+    "migrate:prod": "knex migrate:latest --knexfile dist/knexfile.js",
     "seed": "knex seed:run --knexfile src/knexfile.ts",
     "seed:make": "knex seed:make --knexfile src/knexfile.ts",
     "migrate:make": "knex migrate:make -x ts --knexfile src/knexfile.ts",
