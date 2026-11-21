@@ -4,6 +4,47 @@ import PDFDocument from 'pdfkit';
 import { Readable } from "stream";
 import { getSender } from '../utils/getSender'
 
+
+interface UploadResult {
+  secure_url: string;
+  public_id: string;
+  duration?: number;
+  bytes: number;
+  format: string;
+}
+
+export const uploadChatVideo = (
+  buffer: Buffer
+): Promise<UploadResult> => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'video',
+        folder: 'chat-videos',
+      },
+      (error, result) => {
+        if (error) {
+          return reject(error);
+        }
+
+        if (!result) {
+          return reject(new Error('Cloudinary returned no upload result'));
+        }
+
+        resolve({
+          secure_url: result.secure_url,
+          public_id: result.public_id,
+          duration: result.duration,
+          bytes: result.bytes,
+          format: result.format,
+        });
+      }
+    );
+
+    uploadStream.end(buffer);
+  });
+};
+
 const createChat = async(req: any, res: any) => {
 	try {
 		const { senderId, receiverId, isRead, chatMessage, imageUrl } = req.body;
@@ -75,6 +116,64 @@ const createChat = async(req: any, res: any) => {
 				res.status(400).json({error: error instanceof Error? error.message: error})
 			}
 		})
+
+	} catch (error) {
+		res.status(500).json({error: error instanceof Error? error.message : error})
+	}
+}
+
+const uploadVideo = async(req: any, res: any) => {
+	try {
+
+		let uploadedPublicId: string | undefined;
+		const chatId = req.params.chatId;
+
+		const videoFile = req.file
+
+		if (!videoFile) {
+			return res.status(400).json({
+				message: 'No video file was provided'
+			});
+		}
+
+		if (!chatId) {
+			return res.status(401).json({error: 'Unauthorized'})
+		}
+
+		// const selectedChat = await db('chat').where({chat_id: chatId}).returning('*');
+
+		// if (!selectedChat) {
+		// 	return res.status(404).json({error: 'Chat does not exist'})
+		// }
+
+		// Upload the video to Cloudinary
+	    const uploadedVideo = await uploadChatVideo(videoFile.buffer);
+		uploadedPublicId = uploadedVideo.public_id;
+
+		// Update the existing chat record
+		const [updatedChat] = await db('chat')
+		.where({ chat_id: chatId })
+        .update({
+          video_url: uploadedVideo.secure_url,
+        })
+        .returning(['id', 'video_url']);
+		
+		if (!updatedChat) {
+        // Avoid leaving an orphaned Cloudinary upload
+		  await cloudinary.uploader.destroy(uploadedPublicId, {
+			resource_type: 'video',
+        });
+
+        return res.status(404).json({
+          message: 'Chat not found',
+        });
+      }
+
+      return res.status(200).json({
+        message: 'Chat video uploaded successfully',
+        chat: updatedChat,
+        video: uploadedVideo,
+      });
 
 	} catch (error) {
 		res.status(500).json({error: error instanceof Error? error.message : error})
@@ -594,4 +693,4 @@ const downloadChats = async(req: any, res: any) => {
 	}
 }
 
-export { createChat, fetchChats, updateChat, createGroup, addGroupMember, createGroupChat, fetchGroupChat, fetchGroupChats,fetchGroupChatMessages, downloadChats, clearUnreadChats, deleteGroupMember, fetchUnreadChatMsgs }
+export { createChat, fetchChats, updateChat, createGroup, addGroupMember, createGroupChat, fetchGroupChat, fetchGroupChats,fetchGroupChatMessages, downloadChats, clearUnreadChats, deleteGroupMember, fetchUnreadChatMsgs, uploadVideo }
