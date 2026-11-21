@@ -23,7 +23,9 @@ const config: { [key: string]: Knex.Config } = {
     pool: { min: 0, max: 7 },
     migrations: {
       directory: path.join(__dirname, 'migrations'),
-      tableName: 'knex_migrations'
+      tableName: 'knex_migrations',
+      extension: 'ts',
+      loadExtensions: ['.ts'],
     },
     seeds: {
       directory: path.join(__dirname, 'seeds')
@@ -43,7 +45,9 @@ const config: { [key: string]: Knex.Config } = {
     pool: { min: 0, max: 7 },
     migrations: {
       directory: path.join(__dirname, 'migrations'),
-      tableName: 'knex_migrations'
+      tableName: 'knex_migrations',
+      extension: 'ts',
+      loadExtensions: ['.ts'],
     }
   },
 
@@ -61,7 +65,8 @@ const config: { [key: string]: Knex.Config } = {
     migrations: {
       directory: path.join(__dirname, 'migrations'),
       tableName: 'knex_migrations',
-      extension: 'js'
+      extension: 'ts',
+      loadExtensions: ['.ts'],
     },
     seeds: {
       directory: path.join(__dirname, 'seeds'),
@@ -71,6 +76,8 @@ const config: { [key: string]: Knex.Config } = {
 };
 
 const environment = process.env.NODE_ENV || 'development';
+
+console.log('Knex environment:', environment);
 
 export default config[environment];
 // module.exports = config;
