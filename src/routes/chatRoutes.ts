@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { clearUnreadChats, createChat, createGroup, deleteGroupMember, downloadChats, addGroupMember, fetchChats, fetchGroupChat, fetchUnreadChatMsgs, updateChat, createGroupChat, fetchGroupChatMessages, fetchGroupChats } from '../controllers/chatControllers';
+import { clearUnreadChats, createChat, createGroup, deleteGroupMember, downloadChats, addGroupMember, fetchChats, fetchGroupChat, fetchUnreadChatMsgs, updateChat, createGroupChat, fetchGroupChatMessages, fetchGroupChats, uploadVideo } from '../controllers/chatControllers';
 import { videoUpload } from '../config/multer';
 
 const chatRouter = Router();
@@ -15,7 +15,7 @@ chatRouter.post('/group', createGroup);
 chatRouter.post('/groupChat', createGroupChat);
 chatRouter.post('/groupMember', addGroupMember);
 chatRouter.delete('/groupMember', deleteGroupMember);
-chatRouter.put('/video/:chatId', videoUpload.single('video'), () => {});
+chatRouter.put('/video/:chatId', videoUpload.single('video'), uploadVideo);
 chatRouter.put('/', updateChat);
 chatRouter.post('/download', downloadChats);
 chatRouter.post('/clearUnreadMsgs', clearUnreadChats)
