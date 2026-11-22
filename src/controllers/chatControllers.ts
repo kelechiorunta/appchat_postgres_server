@@ -6,61 +6,61 @@ import { getSender } from '../utils/getSender'
 
 
 interface UploadResult {
-  secure_url: string;
-  public_id: string;
-  duration?: number;
-  bytes: number;
-  format: string;
+	secure_url: string;
+	public_id: string;
+	duration?: number;
+	bytes: number;
+	format: string;
 }
 
 export const uploadChatVideo = (
-  buffer: Buffer
+	buffer: Buffer
 ): Promise<UploadResult> => {
-  return new Promise((resolve, reject) => {
-    const uploadStream = cloudinary.uploader.upload_stream(
-      {
-        resource_type: 'video',
-        folder: 'chat-videos',
-      },
-      (error, result) => {
-        if (error) {
-          return reject(error);
-        }
+	return new Promise((resolve, reject) => {
+		const uploadStream = cloudinary.uploader.upload_stream(
+			{
+				resource_type: 'video',
+				folder: 'chat-videos',
+			},
+			(error, result) => {
+				if (error) {
+					return reject(error);
+				}
 
-        if (!result) {
-          return reject(new Error('Cloudinary returned no upload result'));
-        }
+				if (!result) {
+					return reject(new Error('Cloudinary returned no upload result'));
+				}
 
-        resolve({
-          secure_url: result.secure_url,
-          public_id: result.public_id,
-          duration: result.duration,
-          bytes: result.bytes,
-          format: result.format,
-        });
-      }
-    );
+				resolve({
+					secure_url: result.secure_url,
+					public_id: result.public_id,
+					duration: result.duration,
+					bytes: result.bytes,
+					format: result.format,
+				});
+			}
+		);
 
-    uploadStream.end(buffer);
-  });
+		uploadStream.end(buffer);
+	});
 };
 
-const createChat = async(req: any, res: any) => {
+const createChat = async (req: any, res: any) => {
 	try {
 		const { senderId, receiverId, isRead, chatMessage, imageUrl, videoUrl } = req.body;
 
 		if (!senderId || !receiverId || !chatMessage) {
-			return res.status(401).json({error: 'Incomplete Unauthorized Request!'})
+			return res.status(401).json({ error: 'Incomplete Unauthorized Request!' })
 		}
 
-		const sender = await db('client').where({client_id: senderId}).select('*').first();
-		const receiver = await db('client').where({client_id: receiverId}).select('*').first();
+		const sender = await db('client').where({ client_id: senderId }).select('*').first();
+		const receiver = await db('client').where({ client_id: receiverId }).select('*').first();
 
 		if (!sender) {
-			return res.status(401).json({error: 'No valid sender'})
+			return res.status(401).json({ error: 'No valid sender' })
 		}
 		if (!receiver) {
-			return res.status(401).json({error: 'No valid receiver'})
+			return res.status(401).json({ error: 'No valid receiver' })
 		}
 
 		let uploadedImageLink = '';
@@ -70,31 +70,31 @@ const createChat = async(req: any, res: any) => {
 				folder: "avatars",
 				resource_type: "image"
 			})
-			uploadedImageLink = imageLink && imageLink.secure_url 
+			uploadedImageLink = imageLink && imageLink.secure_url
 		}
 
-		await db.transaction(async(trx) => {
+		await db.transaction(async (trx) => {
 			// START Transaction by logging sender's action
 			await trx('client_history')
-			.update({
-				status: 'PENDING',
-				report: 'Sending Chat Message'
-			})
-			.where({client_id: sender.client_id});
-			
+				.update({
+					status: 'PENDING',
+					report: 'Sending Chat Message'
+				})
+				.where({ client_id: sender.client_id });
+
 			// SAVEPOINTS 
 
 			try {
-				await trx.transaction(async(sp) => {
+				await trx.transaction(async (sp) => {
 					const [newChat] = await sp('chat').insert({
 						senderId,
 						receiverId,
 						isRead,
 						videoUrl,
 						chat_message: chatMessage,
-						image_url: uploadedImageLink? uploadedImageLink: null
+						image_url: uploadedImageLink ? uploadedImageLink : null
 					})
-					.returning('*');
+						.returning('*');
 
 					await sp('client_history').update({
 						status: 'SUCCESS',
@@ -102,34 +102,36 @@ const createChat = async(req: any, res: any) => {
 					})
 
 					if (!newChat) {
-						return res.status(400).json({error: "Chat Message creation failed!"})
+						return res.status(400).json({ error: "Chat Message creation failed!" })
 					}
-					return res.status(201).json({newChat, message: "Chat Message created successfully"})
+					return res.status(201).json({ newChat, message: "Chat Message created successfully" })
 				})
 			} catch (error) {
 				await trx('client_history')
-				.update({
-					status: 'FAILED',
-					report: `Sending Failed: ${ error instanceof Error? error.message : error }`
-				})
-				.where({client_id: senderId});
+					.update({
+						status: 'FAILED',
+						report: `Sending Failed: ${error instanceof Error ? error.message : error}`
+					})
+					.where({ client_id: senderId });
 
-				res.status(400).json({error: error instanceof Error? error.message: error})
+				res.status(400).json({ error: error instanceof Error ? error.message : error })
 			}
 		})
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const uploadVideo = async(req: any, res: any) => {
+const uploadVideo = async (req: any, res: any) => {
 	try {
 
 		let uploadedPublicId: string | undefined;
 		// const chatId = req.params.chatId;
 
 		const videoFile = req.file
+
+		console.log('Videofile', videoFile)
 
 		if (!videoFile) {
 			return res.status(400).json({
@@ -148,51 +150,51 @@ const uploadVideo = async(req: any, res: any) => {
 		// }
 
 		// Upload the video to Cloudinary
-	    const uploadedVideo = await uploadChatVideo(videoFile.buffer);
+		const uploadedVideo = await uploadChatVideo(videoFile.buffer);
 		uploadedPublicId = uploadedVideo.public_id;
 
 		// Update the existing chat record
 		// const [updatedChat] = await db('chat')
 		// .where({ chat_id: chatId })
-        // .update({
-        //   video_url: uploadedVideo.secure_url,
-        // })
-        // .returning(['id', 'video_url']);
-		
-		if (!uploadedVideo) {
-        // Avoid leaving an orphaned Cloudinary upload
-		  await cloudinary.uploader.destroy(uploadedPublicId, {
-			resource_type: 'video',
-        });
+		// .update({
+		//   video_url: uploadedVideo.secure_url,
+		// })
+		// .returning(['id', 'video_url']);
 
-        return res.status(404).json({
-          message: 'Video not created',
-        });
-      }
+		if (!uploadedVideo.secure_url) {
+			// Avoid leaving an orphaned Cloudinary upload
+			await cloudinary.uploader.destroy(uploadedPublicId, {
+				resource_type: 'video',
+			});
 
-      return res.status(200).json({
-        message: 'Chat video uploaded successfully',
-        // chat: updatedChat,
-        videoUrl: uploadedVideo.secure_url,
-      });
+			return res.status(404).json({
+				message: 'Video not created',
+			});
+		}
+
+		return res.status(200).json({
+			message: 'Chat video uploaded successfully',
+			// chat: updatedChat,
+			videoUrl: uploadedVideo.secure_url,
+		});
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const updateChat = async(req: any, res: any) => {
+const updateChat = async (req: any, res: any) => {
 	try {
 		const { chatId, status } = req.body;
 
 		if (!chatId) {
-			return res.status(401).json({error: 'Incomplete Unauthorized Request!'})
+			return res.status(401).json({ error: 'Incomplete Unauthorized Request!' })
 		}
 
-		const chat = await db('chat').where({chat_id: chatId}).select('*').first();
-		
+		const chat = await db('chat').where({ chat_id: chatId }).select('*').first();
+
 		if (!chat) {
-			return res.status(401).json({error: 'No valid chat'})
+			return res.status(401).json({ error: 'No valid chat' })
 		}
 
 
@@ -204,25 +206,25 @@ const updateChat = async(req: any, res: any) => {
 		// 		report: 'Updating Chat Message'
 		// 	})
 		// 	.where({client_id: sender.client_id});
-			
+
 		// 	// SAVEPOINTS 
 
 		// 	try {
 		// 		await trx.transaction(async(sp) => {
-					const [updatedChat] = await db('chat').update({
-						isRead: status,
-					}).where({chat_id: chatId})
-					.returning('*');
+		const [updatedChat] = await db('chat').update({
+			isRead: status,
+		}).where({ chat_id: chatId })
+			.returning('*');
 
-					// await sp('client_history').update({
-					// 	status: 'SUCCESS',
-					// 	report: 'Sent chat message successfully'
-					// })
+		// await sp('client_history').update({
+		// 	status: 'SUCCESS',
+		// 	report: 'Sent chat message successfully'
+		// })
 
-					if (!updatedChat) {
-						return res.status(400).json({error: "Chat Message update failed!"})
-					}
-					return res.status(201).json({updatedChat, message: "Chat Message created successfully"})
+		if (!updatedChat) {
+			return res.status(400).json({ error: "Chat Message update failed!" })
+		}
+		return res.status(201).json({ updatedChat, message: "Chat Message created successfully" })
 		// 		})
 		// 	} catch (error) {
 		// 		await trx('client_history')
@@ -236,172 +238,172 @@ const updateChat = async(req: any, res: any) => {
 		// 	}
 		// })
 	} catch (error) {
-		console.error(error instanceof Error? error.message : error)
+		console.error(error instanceof Error ? error.message : error)
 	}
 }
 
-const fetchChats = async(req: any, res: any) => {
+const fetchChats = async (req: any, res: any) => {
 	try {
 		const senderId = req.params.senderId;
 		const receiverId = req.params.receiverId;
 
-		console.table({senderId, receiverId})
+		console.table({ senderId, receiverId })
 
 		if (!senderId || !receiverId) {
-			return res.status(401).json({error: 'Unauthorized!'})
+			return res.status(401).json({ error: 'Unauthorized!' })
 		}
 
-		const sender = await db('client').where({client_id: senderId}).select('*').first();
-		const receiver = await db('client').where({client_id: receiverId}).select('*').first();
+		const sender = await db('client').where({ client_id: senderId }).select('*').first();
+		const receiver = await db('client').where({ client_id: receiverId }).select('*').first();
 
 		if (!sender || !receiver) {
-			return res.status(401).json({error: 'Unauthorized!'})
+			return res.status(401).json({ error: 'Unauthorized!' })
 		}
 
 		const chats = await db('chat').where({
-			senderId: sender.client_id, 
+			senderId: sender.client_id,
 			receiverId: receiver.client_id
 		}).orWhere({
-			senderId: receiver.client_id, 
+			senderId: receiver.client_id,
 			receiverId: sender.client_id
 		}).select('*').orderBy('chat_id');
 
-		res.status(200).json({chats});
+		res.status(200).json({ chats });
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 };
 
-const clearUnreadChats = async(req: any, res: any) => {
+const clearUnreadChats = async (req: any, res: any) => {
 	try {
 		const { senderId, receiverId } = req.body;
 		if (!senderId || !receiverId) {
-			return res.status(401).json({error: 'Unauthorized'})
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
-		const clearedChats = await db('chat').where({senderId, receiverId, isRead: false}).update({isRead: true}).returning('*');
+		const clearedChats = await db('chat').where({ senderId, receiverId, isRead: false }).update({ isRead: true }).returning('*');
 
 		if (clearedChats) {
-			return res.status(200).json({clearedChats})
+			return res.status(200).json({ clearedChats })
 		}
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const fetchUnreadChatMsgs = async(req: any, res: any) => {
+const fetchUnreadChatMsgs = async (req: any, res: any) => {
 	try {
-		const unReadMsgs = await db('chat').where({isRead: false}).select('*');
+		const unReadMsgs = await db('chat').where({ isRead: false }).select('*');
 
 		if (unReadMsgs) {
 			console.table(unReadMsgs)
-			return res.status(200).json({unReadMsgs})
+			return res.status(200).json({ unReadMsgs })
 		}
 
 		return res.status(200).json([])
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const createGroup = async(req: any, res: any) => {
+const createGroup = async (req: any, res: any) => {
 	try {
 		const { name, membersIds } = req.body;
-		if (!name ||  !membersIds) {
-			return res.status(401).json({error: 'Unauthorized'})
+		if (!name || !membersIds) {
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
 		const uniqueIds = Array.from(new Set(membersIds)) as string[];
 
-		console.table({name, ids: uniqueIds})
+		console.table({ name, ids: uniqueIds })
 
-		const result = await db.transaction(async(trx) => {
+		const result = await db.transaction(async (trx) => {
 
 			const existingMembers = await trx('client')
-			.select('client_id')
-			.whereIn('client_id', uniqueIds);
-			
+				.select('client_id')
+				.whereIn('client_id', uniqueIds);
+
 			if (existingMembers.length !== uniqueIds.length) {
 				throw new Error('One or more member IDs do not exist.');
 			}
 
-			const [group] = await trx('group_chat').insert({name}).returning('*');
-			
+			const [group] = await trx('group_chat').insert({ name }).returning('*');
+
 			if (group) {
 				const groupMembers = await trx('group_chat_members')
-				.insert(uniqueIds.map((clientId) => ({
-					client_id: String(clientId),
-					group_chat_id: group.group_chat_id,
-				}))).returning('*');
-				
-				return {groupId: group.group_chat_id, name: group.name, groupMembers}
+					.insert(uniqueIds.map((clientId) => ({
+						client_id: String(clientId),
+						group_chat_id: group.group_chat_id,
+					}))).returning('*');
+
+				return { groupId: group.group_chat_id, name: group.name, groupMembers }
 			}
 		})
 
-		return res.status(201).json({result})
+		return res.status(201).json({ result })
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const addGroupMember = async(req: any, res: any) => {
+const addGroupMember = async (req: any, res: any) => {
 	try {
 		const { groupId, membersIds } = req.body;
 
 		if (!groupId || !membersIds) {
-			return res.status(401).json({error: 'Unauthorized'})
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
 		const uniqueIds = Array.from(new Set(membersIds)) as string[];
 
-		const result = await db.transaction(async(trx) => {
+		const result = await db.transaction(async (trx) => {
 
 			const existingMembers = await trx('client')
-			.select('client_id')
-			.whereIn('client_id', uniqueIds);
-			
+				.select('client_id')
+				.whereIn('client_id', uniqueIds);
+
 			if (existingMembers.length !== uniqueIds.length) {
 				throw new Error('One or more member IDs do not exist.');
 			}
 
-			const [group] = await trx('group_chat').where({group_chat_id: groupId}).select('*');
+			const [group] = await trx('group_chat').where({ group_chat_id: groupId }).select('*');
 
 			if (!group) {
-				return res.status(401).json({error: 'No authorized group'})
+				return res.status(401).json({ error: 'No authorized group' })
 			}
 
 			const addedGroupMembers = await trx('group_chat_members').insert(
 				uniqueIds.map((clientId) => ({
 					client_id: String(clientId),
 					group_chat_id: group.group_chat_id,
-				}))).where({group_chat_id: group.group_chat_id})
+				}))).where({ group_chat_id: group.group_chat_id })
 				.returning('*');
 
-			return { updatedGroupMembers: addedGroupMembers}
+			return { updatedGroupMembers: addedGroupMembers }
 
 		})
 
-		return res.status(200).json({result})
+		return res.status(200).json({ result })
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const deleteGroupMember = async(req: any, res: any) => {
+const deleteGroupMember = async (req: any, res: any) => {
 	try {
-		const {groupId, clientIds} = req.body;
+		const { groupId, clientIds } = req.body;
 
 		if (!groupId || !clientIds) {
-			return res.status(401).json({error: 'Unauthorized'})
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
 		const uniqueIds = Array.from(new Set(clientIds)) as string[];
 
-		const result = await db.transaction(async(trx) => {
-			const [group] = await trx('group_chat').where({group_chat_id: groupId}).select('*');
-			
+		const result = await db.transaction(async (trx) => {
+			const [group] = await trx('group_chat').where({ group_chat_id: groupId }).select('*');
+
 			if (!group) {
-				return res.status(404).json({error: 'Non-existent group'})
+				return res.status(404).json({ error: 'Non-existent group' })
 			}
 
 			const existingClients = await trx('client').select('client_id').whereIn('client_id', uniqueIds);
@@ -411,32 +413,32 @@ const deleteGroupMember = async(req: any, res: any) => {
 			}
 
 			const deleteClient = await trx('group_chat_members')
-			.where('group_chat_id', group.group_chat_id)
-			.whereIn('client_id', uniqueIds.map((clientId) => String(clientId)))
-			.delete();
+				.where('group_chat_id', group.group_chat_id)
+				.whereIn('client_id', uniqueIds.map((clientId) => String(clientId)))
+				.delete();
 
-			return {status: true, client: deleteClient}
+			return { status: true, client: deleteClient }
 		})
 
-		return res.status(204).json({result})
+		return res.status(204).json({ result })
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const fetchGroupChat = async(req: any, res: any) => {
+const fetchGroupChat = async (req: any, res: any) => {
 	try {
 		// FETCH A GROUP BASED ON ITS ID
-		const groupId  = req.params.groupId;
+		const groupId = req.params.groupId;
 
 		console.log("GROUP_ID", groupId)
 
 		if (!groupId) {
-			return res.status(401).json({error: 'Unauthorized'})
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
-		const result = await db.transaction(async(trx) => {
-			const [group] = await trx('group_chat').where({group_chat_id: groupId}).select('*');
+		const result = await db.transaction(async (trx) => {
+			const [group] = await trx('group_chat').where({ group_chat_id: groupId }).select('*');
 
 			if (!group) {
 				throw new Error('Non-existent group')
@@ -446,34 +448,35 @@ const fetchGroupChat = async(req: any, res: any) => {
 				'group_chat_members.group_chat_id AS groupId',
 				'group_chat_members.client_id AS clientId',
 				'client.name AS client_name',
-				'group_chat.name AS group_name',	
+				'group_chat.name AS group_name',
 			).from('group_chat')
-			.where('group_chat.name', '=', group.name)
-			.join('group_chat_members', 'group_chat_members.group_chat_id', '=',  group.group_chat_id)
-			.join('client', 'client.client_id', '=', 'group_chat_members.client_id')
-			
+				.where('group_chat.name', '=', group.name)
+				.join('group_chat_members', 'group_chat_members.group_chat_id', '=', group.group_chat_id)
+				.join('client', 'client.client_id', '=', 'group_chat_members.client_id')
+
 
 			if (groupChatMembers) {
 				const ids = Array.from(new Set(groupChatMembers.map(member => member.clientId)));
 				const members = Array.from(new Set(groupChatMembers.map(member => member.client_name)));
-				console.table({groupChatMembers})
-				return {groupChat: groupChatMembers.map(member => ({groupId: member.groupId, groupName: member.group_name, membersIds: ids, members: members})).reduce(({groupId, groupName, membersIds, members}) => ({groupId, groupName, membersIds, members}))
+				console.table({ groupChatMembers })
+				return {
+					groupChat: groupChatMembers.map(member => ({ groupId: member.groupId, groupName: member.group_name, membersIds: ids, members: members })).reduce(({ groupId, groupName, membersIds, members }) => ({ groupId, groupName, membersIds, members }))
+				}
 			}
-		}
-			
+
 		})
 
 		return res.status(200).json(result)
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const fetchGroupChats = async(req: any, res: any) => {
+const fetchGroupChats = async (req: any, res: any) => {
 	try {
 		// FETCH ALL GROUPS
-		const result = await db.transaction(async(trx) => {
+		const result = await db.transaction(async (trx) => {
 			const groups = await trx('group_chat').select('*');
 
 			if (!groups) {
@@ -484,34 +487,34 @@ const fetchGroupChats = async(req: any, res: any) => {
 				'group_chat_members.group_chat_id AS groupId',
 				'group_chat_members.client_id AS clientId',
 				'client.name AS client_name',
-				'group_chat.name AS group_name',	
+				'group_chat.name AS group_name',
 			).from('group_chat')
-			.whereIn('group_chat.name', groups.map(group => group.name))
-			.whereIn('group_chat_members.group_chat_id', groups.map(group => group.group_chat_id))
-			.join('group_chat_members', 'group_chat_members.group_chat_id', '=',  'group_chat.group_chat_id')
-			.join('client', 'client.client_id', '=', 'group_chat_members.client_id')
-			
+				.whereIn('group_chat.name', groups.map(group => group.name))
+				.whereIn('group_chat_members.group_chat_id', groups.map(group => group.group_chat_id))
+				.join('group_chat_members', 'group_chat_members.group_chat_id', '=', 'group_chat.group_chat_id')
+				.join('client', 'client.client_id', '=', 'group_chat_members.client_id')
+
 
 			if (groupChatMembers) {
 				const ids = Array.from(new Set(groupChatMembers.filter(member => member.clientId && member.groupId)));
 				const members = Array.from(new Set(groupChatMembers.map(member => member.client_name)));
-				console.table({groupChatMembers})
+				console.table({ groupChatMembers })
 
 				const groupedChats = Object.values(groupChatMembers.reduce((acc, chat) => {
 					const { groupId, clientId, client_name, group_name } = chat;
-					
+
 					if (!acc[groupId]) {
 						acc[groupId] = {
-							groupId, 
+							groupId,
 							name: group_name,
 							membersIds: [],
 							members: [],
 						};
 					}
-					
+
 					acc[groupId].membersIds.push(clientId);
 					acc[groupId].members.push(client_name);
-					
+
 					return acc;
 				}, {} as Record<number, {
 					groupId: number;
@@ -519,32 +522,32 @@ const fetchGroupChats = async(req: any, res: any) => {
 					membersIds: string[];
 					members: string[];
 				}>)
-			);
-			console.log(groupedChats);
+				);
+				console.log(groupedChats);
 				return { groupedChats }
-		}
-			
+			}
+
 		})
 
 		return res.status(200).json(result)
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const fetchGroupChatMessages = async(req: any, res: any) => {
+const fetchGroupChatMessages = async (req: any, res: any) => {
 	try {
-		const groupId  = req.params.groupId;
+		const groupId = req.params.groupId;
 
 		console.log("GROUPID", groupId)
 
 		if (!groupId) {
-			return res.status(401).json({error: 'Unauthorized'})
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
-		const result = await db.transaction(async(trx) => {
-			const [group] = await trx('group_chat').where({group_chat_id: groupId}).select('*');
+		const result = await db.transaction(async (trx) => {
+			const [group] = await trx('group_chat').where({ group_chat_id: groupId }).select('*');
 
 			if (!group) {
 				throw new Error('Non-existent group')
@@ -556,49 +559,51 @@ const fetchGroupChatMessages = async(req: any, res: any) => {
 				'client.name AS sender',
 				'group_chat_message.updated_at AS updatedAt',
 			).from('group_chat_message')
-			.join('group_chat', 'group_chat_message.group_chat_id', group.group_chat_id)
-			.join('client', 'client.client_id', '=', 'group_chat_message.client_id')
+				.join('group_chat', 'group_chat_message.group_chat_id', group.group_chat_id)
+				.join('client', 'client.client_id', '=', 'group_chat_message.client_id')
 
 			if (groupChatMessages) {
-				return {groupChatMessages: Object.values(groupChatMessages.reduce((acc, {message, clientId, sender, updatedAt}, index) => {
-					if (!acc[message]) {
-						acc[message] = {
-							message,
-							clientId,
-							sender,
-							updatedAt
-						}				
-					}
-					return acc
-				}, {} as Record<number, {
-					message: string;
-					clientId: string;
-					sender: string;
-					updatedAt: string;
-				}>
-			))}
+				return {
+					groupChatMessages: Object.values(groupChatMessages.reduce((acc, { message, clientId, sender, updatedAt }, index) => {
+						if (!acc[message]) {
+							acc[message] = {
+								message,
+								clientId,
+								sender,
+								updatedAt
+							}
+						}
+						return acc
+					}, {} as Record<number, {
+						message: string;
+						clientId: string;
+						sender: string;
+						updatedAt: string;
+					}>
+					))
+				}
 			}
-			
+
 		})
 
 		return res.status(200).json(result)
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-const createGroupChat = async(req: any, res: any) => {
+const createGroupChat = async (req: any, res: any) => {
 	try {
 		const { groupMessage, senderId, groupId } = req.body;
 
 		if (!groupMessage || !senderId || !groupId) {
-			return res.status(401).json({error: 'Unauthorized'})
+			return res.status(401).json({ error: 'Unauthorized' })
 		}
 
-		const result = await db.transaction(async(trx) => {
-			const [group] = await trx('group_chat').where({group_chat_id: groupId}).select('*');
-			const groupMembers = await trx('group_chat_members').where({group_chat_id: group.group_chat_id}).select('*');
+		const result = await db.transaction(async (trx) => {
+			const [group] = await trx('group_chat').where({ group_chat_id: groupId }).select('*');
+			const groupMembers = await trx('group_chat_members').where({ group_chat_id: group.group_chat_id }).select('*');
 
 			if (!groupMembers) {
 				throw new Error('No group members for this group')
@@ -614,12 +619,12 @@ const createGroupChat = async(req: any, res: any) => {
 				message: groupMessage,
 				group_chat_id: group.group_chat_id,
 				client_id: sender.client_id,
-			}).where({group_chat_id: group.group_chat_id})
-			.whereIn('client_id', groupMembers.map(member => String(member.client_id)))
-			.returning('*');
+			}).where({ group_chat_id: group.group_chat_id })
+				.whereIn('client_id', groupMembers.map(member => String(member.client_id)))
+				.returning('*');
 
 			if (newGroupMessage) {
-				return {newGroupMessage}
+				return { newGroupMessage }
 			}
 
 		})
@@ -627,27 +632,27 @@ const createGroupChat = async(req: any, res: any) => {
 		return res.status(201).json(result)
 
 	} catch (error) {
-		res.status(500).json({error: error instanceof Error? error.message : error})
+		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
 
-const downloadChats = async(req: any, res: any) => {
+const downloadChats = async (req: any, res: any) => {
 	try {
 		const { chats, authUserId } = req.body;
 
-		console.table({authUserId})
+		console.table({ authUserId })
 
 		if (!chats) {
-			res.status(401).json({error: 'Provide valid chats'})
+			res.status(401).json({ error: 'Provide valid chats' })
 		}
 
 		// const readableFromChats = Readable.from([chats], { objectMode: true });
 
-			const confirmedChats = await db('chat').where({senderId: chats[0].senderId, receiverId: chats[0].receiverId}).orWhere({senderId: chats[0].receiverId, receiverId: chats[0].senderId}).select('*');
+		const confirmedChats = await db('chat').where({ senderId: chats[0].senderId, receiverId: chats[0].receiverId }).orWhere({ senderId: chats[0].receiverId, receiverId: chats[0].senderId }).select('*');
 
-			const readableFromChats = Readable.from([confirmedChats], { objectMode: true });
-		
+		const readableFromChats = Readable.from([confirmedChats], { objectMode: true });
+
 		const doc = new PDFDocument();
 
 		if (doc) {
@@ -656,30 +661,30 @@ const downloadChats = async(req: any, res: any) => {
 
 			doc.pipe(res);
 
-			const [ sender, receiver ] = await getSender(confirmedChats[0].senderId, confirmedChats[0].receiverId) as any;
+			const [sender, receiver] = await getSender(confirmedChats[0].senderId, confirmedChats[0].receiverId) as any;
 
 			readableFromChats.on('data', (data) => {
-				doc.fontSize(18).text(data[0].senderId === authUserId? `${sender.name} and ${receiver.name}` : `${receiver.name} and ${sender.name}`, {
-					align: data[0].senderId === authUserId? 'right' : 'left'
+				doc.fontSize(18).text(data[0].senderId === authUserId ? `${sender.name} and ${receiver.name}` : `${receiver.name} and ${sender.name}`, {
+					align: data[0].senderId === authUserId ? 'right' : 'left'
 				});
-				
+
 				doc.moveDown();
 				renderMessages(data);
 			})
-			.on('end', () => {
-				doc.end();
-				console.log('PDF streamed successfully');
-			})
-			.on('error', (err) => {
-				console.error(err);
-				if (!res.headersSent) {
-					res.status(500).send('Error generating PDF');
-				}
-			});
-			
+				.on('end', () => {
+					doc.end();
+					console.log('PDF streamed successfully');
+				})
+				.on('error', (err) => {
+					console.error(err);
+					if (!res.headersSent) {
+						res.status(500).send('Error generating PDF');
+					}
+				});
+
 			// ✅ Extract message rendering
-			function renderMessages(data:any) {
-				data.forEach((d: {senderId: string, receiverId: string, chat_message: string}, indx: number) => {
+			function renderMessages(data: any) {
+				data.forEach((d: { senderId: string, receiverId: string, chat_message: string }, indx: number) => {
 					const isSender = d.senderId === authUserId;
 					doc.fontSize(12).text(d.chat_message ?? '', {
 						align: isSender ? 'right' : 'left'
@@ -690,8 +695,8 @@ const downloadChats = async(req: any, res: any) => {
 		}
 
 	} catch (error) {
-		return res.status(500).json({error: error instanceof Error? error.message : error})
+		return res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
 
-export { createChat, fetchChats, updateChat, createGroup, addGroupMember, createGroupChat, fetchGroupChat, fetchGroupChats,fetchGroupChatMessages, downloadChats, clearUnreadChats, deleteGroupMember, fetchUnreadChatMsgs, uploadVideo }
+export { createChat, fetchChats, updateChat, createGroup, addGroupMember, createGroupChat, fetchGroupChat, fetchGroupChats, fetchGroupChatMessages, downloadChats, clearUnreadChats, deleteGroupMember, fetchUnreadChatMsgs, uploadVideo }
