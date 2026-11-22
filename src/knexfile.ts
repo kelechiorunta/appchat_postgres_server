@@ -13,10 +13,10 @@ const config: { [key: string]: Knex.Config } = {
   development: {
     client: 'pg',
     connection: {
-      host: process.env.NODE_ENV==='production'? 'db' : '127.0.0.1',
-      port: process.env.NODE_ENV==='production'? 5432 : 5441,
-      user:  process.env.DB_USER as string,
-      password:  process.env.DB_PWD as string,
+      host: process.env.NODE_ENV === 'production' ? 'db' : '127.0.0.1',
+      port: process.env.NODE_ENV === 'production' ? 5432 : 5441,
+      user: process.env.DB_USER as string,
+      password: process.env.DB_PWD as string,
       database: process.env.DB_NAME as string
     },
     debug: true,
@@ -63,10 +63,10 @@ const config: { [key: string]: Knex.Config } = {
     debug: false,
     pool: { min: 0, max: 7 },
     migrations: {
-      directory: path.join(__dirname,'..', 'src/migrations'),
+      directory: path.join(__dirname, 'migrations'),
       tableName: 'knex_migrations',
-      extension: 'ts',
-      loadExtensions: ['.ts'],
+      // extension: 'ts',
+      loadExtensions: ['.js'],
     },
     seeds: {
       directory: path.join(__dirname, 'seeds'),
