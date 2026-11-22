@@ -47,7 +47,7 @@ export const uploadChatVideo = (
 
 const createChat = async(req: any, res: any) => {
 	try {
-		const { senderId, receiverId, isRead, chatMessage, imageUrl } = req.body;
+		const { senderId, receiverId, isRead, chatMessage, imageUrl, videoUrl } = req.body;
 
 		if (!senderId || !receiverId || !chatMessage) {
 			return res.status(401).json({error: 'Incomplete Unauthorized Request!'})
@@ -90,6 +90,7 @@ const createChat = async(req: any, res: any) => {
 						senderId,
 						receiverId,
 						isRead,
+						videoUrl,
 						chat_message: chatMessage,
 						image_url: uploadedImageLink? uploadedImageLink: null
 					})
@@ -126,7 +127,7 @@ const uploadVideo = async(req: any, res: any) => {
 	try {
 
 		let uploadedPublicId: string | undefined;
-		const chatId = req.params.chatId;
+		// const chatId = req.params.chatId;
 
 		const videoFile = req.file
 
@@ -136,9 +137,9 @@ const uploadVideo = async(req: any, res: any) => {
 			});
 		}
 
-		if (!chatId) {
-			return res.status(401).json({error: 'Unauthorized'})
-		}
+		// if (!chatId) {
+		// 	return res.status(401).json({error: 'Unauthorized'})
+		// }
 
 		// const selectedChat = await db('chat').where({chat_id: chatId}).returning('*');
 
@@ -151,28 +152,28 @@ const uploadVideo = async(req: any, res: any) => {
 		uploadedPublicId = uploadedVideo.public_id;
 
 		// Update the existing chat record
-		const [updatedChat] = await db('chat')
-		.where({ chat_id: chatId })
-        .update({
-          video_url: uploadedVideo.secure_url,
-        })
-        .returning(['id', 'video_url']);
+		// const [updatedChat] = await db('chat')
+		// .where({ chat_id: chatId })
+        // .update({
+        //   video_url: uploadedVideo.secure_url,
+        // })
+        // .returning(['id', 'video_url']);
 		
-		if (!updatedChat) {
+		if (!uploadedVideo) {
         // Avoid leaving an orphaned Cloudinary upload
 		  await cloudinary.uploader.destroy(uploadedPublicId, {
 			resource_type: 'video',
         });
 
         return res.status(404).json({
-          message: 'Chat not found',
+          message: 'Video not created',
         });
       }
 
       return res.status(200).json({
         message: 'Chat video uploaded successfully',
-        chat: updatedChat,
-        video: uploadedVideo,
+        // chat: updatedChat,
+        videoUrl: uploadedVideo.secure_url,
       });
 
 	} catch (error) {
