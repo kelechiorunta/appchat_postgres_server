@@ -15,7 +15,7 @@ chatRouter.post('/group', createGroup);
 chatRouter.post('/groupChat', createGroupChat);
 chatRouter.post('/groupMember', addGroupMember);
 chatRouter.delete('/groupMember', deleteGroupMember);
-chatRouter.put('/video/:chatId', videoUpload.single('video'), uploadVideo);
+chatRouter.put('/video', videoUpload.single('video'), uploadVideo);
 chatRouter.put('/', updateChat);
 chatRouter.post('/download', downloadChats);
 chatRouter.post('/clearUnreadMsgs', clearUnreadChats)
