@@ -63,7 +63,7 @@ const config: { [key: string]: Knex.Config } = {
     debug: false,
     pool: { min: 0, max: 7 },
     migrations: {
-      directory: path.join(__dirname, 'migrations'),
+      directory: path.join(__dirname, 'src/migrations'),
       tableName: 'knex_migrations',
       extension: 'ts',
       loadExtensions: ['.ts'],
