@@ -13,8 +13,8 @@ const config: { [key: string]: Knex.Config } = {
   development: {
     client: 'pg',
     connection: {
-      host: process.env.NODE_ENV === 'production' ? 'db' : '127.0.0.1',
-      port: process.env.NODE_ENV === 'production' ? 5432 : 5441,
+      host: '127.0.0.1',
+      port: 5441,
       user: process.env.DB_USER as string,
       password: process.env.DB_PWD as string,
       database: process.env.DB_NAME as string
