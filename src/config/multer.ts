@@ -11,20 +11,16 @@ const videoUpload = multer({
     fileSize: 100 * 1024 * 1024, // 100 MB
   },
 
-  fileFilter: (_req, file, cb) => {
-    const allowedTypes = [
-      'video/webm',
-      'video/mp4',
-      'video/quicktime',
-      'video/x-matroska',
-      'application/octet-stream',
-    ];
+  fileFilter: (req, file, callback) => {
+    console.log('========== VIDEO UPLOAD DEBUG ==========');
+    console.log('Original filename:', file.originalname);
+    console.log('MIME type:', file.mimetype);
+    console.log('Field name:', file.fieldname);
+    console.log('Encoding:', file.encoding);
+    console.log('========================================');
 
-    if (!allowedTypes.includes(file.mimetype)) {
-      return cb(new Error('Unsupported video format'));
-    }
-
-    cb(null, true);
+    // Temporarily accept the upload so we can inspect it.
+    callback(null, true);
   },
 });
 
