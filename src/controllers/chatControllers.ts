@@ -90,7 +90,7 @@ const createChat = async (req: any, res: any) => {
 						senderId,
 						receiverId,
 						isRead,
-						videoUrl,
+						video_url: videoUrl,
 						chat_message: chatMessage,
 						image_url: uploadedImageLink ? uploadedImageLink : null
 					})
