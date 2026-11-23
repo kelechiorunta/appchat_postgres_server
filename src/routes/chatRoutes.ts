@@ -5,13 +5,14 @@ import { videoUpload } from '../config/multer';
 const chatRouter = Router();
 
 // chatRouter.get('/:id', validateToken, fetchUser);
-chatRouter.post('/video', videoUpload.single('video'), uploadVideo);
+
 chatRouter.get('/unReadMsgs', fetchUnreadChatMsgs);
 chatRouter.get('/group/:groupId',  fetchGroupChat);
 chatRouter.get('/groups',  fetchGroupChats);
 chatRouter.get('/groupMessages/:groupId',  fetchGroupChatMessages);
 chatRouter.get('/:senderId/:receiverId',  fetchChats);
 chatRouter.post('/', createChat);
+chatRouter.post('/video', videoUpload.single('video'), uploadVideo);
 chatRouter.post('/group', createGroup);
 chatRouter.post('/groupChat', createGroupChat);
 chatRouter.post('/groupMember', addGroupMember);
