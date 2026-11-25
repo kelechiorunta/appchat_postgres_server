@@ -1,12 +1,11 @@
 import type { Knex } from 'knex';
 import path from 'path';
 import dotenv from 'dotenv';
-import { fileURLToPath } from 'url';
 
-const __dirname = path.resolve()
+const dirname = process.env.NODE_ENV === 'development'? path.resolve() : __dirname
 // Expose env variables
 dotenv.config({
-  path: path.resolve(__dirname, "../.env"),
+  path: path.resolve(dirname, "../.env"),
 });
 
 
@@ -25,13 +24,13 @@ const config: { [key: string]: Knex.Config } = {
     debug: true,
     pool: { min: 0, max: 7 },
     migrations: {
-      directory: path.join(__dirname, 'migrations'),
+      directory: path.join(dirname, 'migrations'),
       tableName: 'knex_migrations',
       extension: 'ts',
       loadExtensions: ['.ts'],
     },
     seeds: {
-      directory: path.join(__dirname, 'seeds')
+      directory: path.join(dirname, 'seeds')
     }
   },
 
@@ -47,7 +46,7 @@ const config: { [key: string]: Knex.Config } = {
     debug: true,
     pool: { min: 0, max: 7 },
     migrations: {
-      directory: path.join(__dirname, 'migrations'),
+      directory: path.join(dirname, 'migrations'),
       tableName: 'knex_migrations',
       extension: 'ts',
       loadExtensions: ['.ts'],
@@ -66,13 +65,13 @@ const config: { [key: string]: Knex.Config } = {
     debug: false,
     pool: { min: 0, max: 7 },
     migrations: {
-      directory: path.join(__dirname, 'migrations'),
+      directory: path.join(dirname, 'migrations'),
       tableName: 'knex_migrations',
       // extension: 'ts',
       loadExtensions: ['.js'],
     },
     seeds: {
-      directory: path.join(__dirname, 'seeds'),
+      directory: path.join(dirname, 'seeds'),
       extension: 'js'
     }
   }
