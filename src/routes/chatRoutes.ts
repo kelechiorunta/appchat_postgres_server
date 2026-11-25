@@ -1,6 +1,6 @@
 import { Router } from 'express';
-import { clearUnreadChats, createChat, createGroup, deleteGroupMember, downloadChats, addGroupMember, fetchChats, fetchGroupChat, fetchUnreadChatMsgs, updateChat, createGroupChat, fetchGroupChatMessages, fetchGroupChats, uploadVideo } from '../controllers/chatControllers';
-import { videoUpload } from '../config/multer';
+import { clearUnreadChats, createChat, createGroup, deleteGroupMember, downloadChats, addGroupMember, fetchChats, fetchGroupChat, fetchUnreadChatMsgs, updateChat, createGroupChat, fetchGroupChatMessages, fetchGroupChats, uploadVideo, uploadAudio } from '../controllers/chatControllers';
+import { audioUpload, videoUpload } from '../config/multer';
 
 const chatRouter = Router();
 
@@ -13,6 +13,7 @@ chatRouter.get('/groupMessages/:groupId',  fetchGroupChatMessages);
 chatRouter.get('/:senderId/:receiverId',  fetchChats);
 chatRouter.post('/', createChat);
 chatRouter.post('/video', videoUpload.single('video'), uploadVideo);
+chatRouter.post('/audio', audioUpload.single('audio'), uploadAudio);
 chatRouter.post('/group', createGroup);
 chatRouter.post('/groupChat', createGroupChat);
 chatRouter.post('/groupMember', addGroupMember);
