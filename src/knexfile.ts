@@ -1,11 +1,14 @@
 import type { Knex } from 'knex';
 import path from 'path';
 import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.resolve()
 // Expose env variables
 dotenv.config({
   path: path.resolve(__dirname, "../.env"),
 });
+
 
 // Update with your config settings.
 
@@ -17,7 +20,7 @@ const config: { [key: string]: Knex.Config } = {
       port: 5441,
       user: process.env.DB_USER as string,
       password: process.env.DB_PWD as string,
-      database: process.env.DB_NAME as string
+      database: process.env.DB_DEV_NAME as string
     },
     debug: true,
     pool: { min: 0, max: 7 },
@@ -39,7 +42,7 @@ const config: { [key: string]: Knex.Config } = {
       port: 5441,
       user: process.env.DB_USER as string,
       password: process.env.DB_PWD as string,
-      database: process.env.DB_NAME as string
+      database: process.env.DB_DEV_NAME as string
     },
     debug: true,
     pool: { min: 0, max: 7 },
@@ -58,7 +61,7 @@ const config: { [key: string]: Knex.Config } = {
       port: 5432,
       user: process.env.DB_USER as string,
       password: process.env.DB_PWD as string,
-      database: process.env.DB_NAME as string
+      database: process.env.DB_PROD_NAME as string
     },
     debug: false,
     pool: { min: 0, max: 7 },
