@@ -45,9 +45,34 @@ export const uploadChatVideo = (
 	});
 };
 
+export const uploadChatAudio = (buffer: Buffer) => {
+  return new Promise<any>((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        resource_type: 'video',
+        folder: 'chat-audios',
+        public_id: `audio-${Date.now()}`,
+      },
+      (error, result) => {
+        if (error) {
+          return reject(error);
+        }
+
+        if (!result) {
+          return reject(new Error('Cloudinary returned no upload result'));
+        }
+
+        resolve(result);
+      }
+    );
+
+    uploadStream.end(buffer);
+  });
+};
+
 const createChat = async (req: any, res: any) => {
 	try {
-		const { senderId, receiverId, isRead, chatMessage, imageUrl, videoUrl } = req.body;
+		const { senderId, receiverId, isRead, chatMessage, imageUrl, videoUrl, audioUrl } = req.body;
 
 		if (!senderId || !receiverId || !chatMessage) {
 			return res.status(401).json({ error: 'Incomplete Unauthorized Request!' })
@@ -91,6 +116,7 @@ const createChat = async (req: any, res: any) => {
 						receiverId,
 						isRead,
 						video_url: videoUrl,
+						audio_url: audioUrl,
 						chat_message: chatMessage,
 						image_url: uploadedImageLink ? uploadedImageLink : null
 					})
@@ -139,27 +165,9 @@ const uploadVideo = async (req: any, res: any) => {
 			});
 		}
 
-		// if (!chatId) {
-		// 	return res.status(401).json({error: 'Unauthorized'})
-		// }
-
-		// const selectedChat = await db('chat').where({chat_id: chatId}).returning('*');
-
-		// if (!selectedChat) {
-		// 	return res.status(404).json({error: 'Chat does not exist'})
-		// }
-
 		// Upload the video to Cloudinary
 		const uploadedVideo = await uploadChatVideo(videoFile.buffer);
 		uploadedPublicId = uploadedVideo.public_id;
-
-		// Update the existing chat record
-		// const [updatedChat] = await db('chat')
-		// .where({ chat_id: chatId })
-		// .update({
-		//   video_url: uploadedVideo.secure_url,
-		// })
-		// .returning(['id', 'video_url']);
 
 		if (!uploadedVideo.secure_url) {
 			// Avoid leaving an orphaned Cloudinary upload
@@ -174,7 +182,6 @@ const uploadVideo = async (req: any, res: any) => {
 
 		return res.status(200).json({
 			message: 'Chat video uploaded successfully',
-			// chat: updatedChat,
 			videoUrl: uploadedVideo.secure_url,
 		});
 
@@ -182,6 +189,39 @@ const uploadVideo = async (req: any, res: any) => {
 		res.status(500).json({ error: error instanceof Error ? error.message : error })
 	}
 }
+
+const uploadAudio = async (req: any, res: any) => {
+  try {
+    const audioFile = req.file;
+
+    if (!audioFile) {
+      return res.status(400).json({
+        message: 'No audio file was provided',
+      });
+    }
+
+    const uploadedAudio = await uploadChatAudio(audioFile.buffer);
+
+    if (!uploadedAudio.secure_url) {
+      return res.status(500).json({
+        message: 'Cloudinary did not return a secure URL',
+      });
+    }
+
+    return res.status(200).json({
+      message: 'Audio uploaded successfully',
+      audioUrl: uploadedAudio.secure_url,
+      publicId: uploadedAudio.public_id,
+    });
+  } catch (error) {
+    console.error('Audio upload error:', error);
+
+    return res.status(500).json({
+      message: 'Audio upload failed',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
 
 const updateChat = async (req: any, res: any) => {
 	try {
@@ -699,4 +739,4 @@ const downloadChats = async (req: any, res: any) => {
 	}
 }
 
-export { createChat, fetchChats, updateChat, createGroup, addGroupMember, createGroupChat, fetchGroupChat, fetchGroupChats, fetchGroupChatMessages, downloadChats, clearUnreadChats, deleteGroupMember, fetchUnreadChatMsgs, uploadVideo }
+export { createChat, fetchChats, updateChat, createGroup, addGroupMember, createGroupChat, fetchGroupChat, fetchGroupChats, fetchGroupChatMessages, downloadChats, clearUnreadChats, deleteGroupMember, fetchUnreadChatMsgs, uploadVideo, uploadAudio }
