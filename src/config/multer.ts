@@ -8,7 +8,7 @@ const videoUpload = multer({
   storage: storage,
 
   limits: {
-    fileSize: 300 * 1024 * 1024, // 100 MB
+    fileSize: 500 * 1024 * 1024, // 500 MB
   },
 
   fileFilter: (req, file, callback) => {
@@ -24,4 +24,27 @@ const videoUpload = multer({
   },
 });
 
-export { upload, videoUpload }
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 150 * 1024 * 1024, // 50 MB
+  },
+  fileFilter: (req, file, callback) => {
+    // const allowedTypes = [
+    //   'audio/webm',
+    //   'audio/mp4',
+    //   'audio/mpeg',
+    //   'audio/ogg',
+    //   'audio/wav',
+    //   'audio/x-wav',
+    // ];
+
+    // if (allowedTypes.includes(file.mimetype)) {
+    callback(null, true);
+    // } else {
+    //   callback(new Error(`Unsupported audio format: ${file.mimetype}`));
+    // }
+  },
+});
+
+export { upload, videoUpload, audioUpload }
