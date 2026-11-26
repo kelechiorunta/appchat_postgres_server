@@ -38,6 +38,14 @@ const audioUpload = multer({
     //   'audio/wav',
     //   'audio/x-wav',
     // ];
+    console.log({
+      name: req.file?.originalname,
+      mimetype: req.file?.mimetype,
+      size: req.file?.size,
+      sizeInMB: req.file
+        ? (req.file.size / (1024 * 1024)).toFixed(2)
+        : 0,
+    });
 
     // if (allowedTypes.includes(file.mimetype)) {
     callback(null, true);
