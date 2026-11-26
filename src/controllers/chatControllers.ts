@@ -51,6 +51,7 @@ export const uploadChatAudio = (buffer: Buffer) => {
       {
         resource_type: 'video',
         folder: 'chat-audios',
+		timeout: 120000,
         public_id: `audio-${Date.now()}`,
       },
       (error, result) => {
