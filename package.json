@@ -12,7 +12,7 @@
     "migrate:prod": "knex migrate:latest --knexfile dist/knexfile.js",
     "seed": "knex seed:run --knexfile src/knexfile.ts",
     "seed:make": "knex seed:make --knexfile src/knexfile.ts",
-    "migrate:make": "knex migrate:make -x ts --knexfile src/knexfile.ts",
+    "migrate:make": "NODE_ENV=development knex migrate:make -x ts --knexfile src/knexfile.ts",
     "migrate:rollback": "NODE_ENV=development knex migrate:rollback --knexfile src/knexfile.ts",
     "migrate:list": "knex migrate:list --knexfile src/knexfile.ts",
     "nginx:start": "brew services start nginx",
